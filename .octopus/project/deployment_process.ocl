@@ -3,6 +3,7 @@ step "create-s3-bucket" {
 
     action {
         action_type = "Octopus.AwsRunCloudFormation"
+        excluded_environments = ["security"]
         notes = "Create an S3 bucket to hold the Lambda application code that is to be deployed."
         properties = {
             Octopus.Action.Aws.AssumeRole = "False"
@@ -37,6 +38,7 @@ step "upload-lambda" {
 
     action {
         action_type = "Octopus.AwsUploadS3"
+        excluded_environments = ["security"]
         notes = "Upload the Lambda application packages to the S3 bucket created in the previous step."
         properties = {
             Octopus.Action.Aws.AssumeRole = "False"
@@ -68,6 +70,7 @@ step "get-stack-outputs" {
 
     action {
         action_type = "Octopus.AwsRunScript"
+        excluded_environments = ["security"]
         notes = "Read the CloudFormation outputs from the stack that created the shared API Gateway instance."
         properties = {
             Octopus.Action.Aws.AssumeRole = "False"
@@ -131,6 +134,7 @@ step "deploy-application-lambda" {
 
     action {
         action_type = "Octopus.AwsRunCloudFormation"
+        excluded_environments = ["security"]
         notes = "To achieve zero downtime deployments, we must deploy Lambdas and their versions in separate stacks. This stack deploys the main application Lambda."
         properties = {
             Octopus.Action.Aws.AssumeRole = "False"
@@ -363,6 +367,7 @@ step "run-database-migrations" {
 
     action {
         action_type = "Octopus.AwsRunScript"
+        excluded_environments = ["security"]
         notes = "Run the Lambda that performs database migrations."
         properties = {
             Octopus.Action.Aws.AssumeRole = "False"
@@ -401,6 +406,7 @@ step "deploy-application-lambda-version" {
 
     action {
         action_type = "Octopus.AwsRunCloudFormation"
+        excluded_environments = ["security"]
         notes = "Stacks deploying Lambda versions must have unique names to ensure a new version is created each time. This step deploys a uniquely names stack creating a version of the Lambda deployed in the last step."
         properties = {
             Octopus.Action.Aws.AssumeRole = "False"
@@ -464,6 +470,7 @@ step "update-api-gateway" {
 
     action {
         action_type = "Octopus.AwsRunCloudFormation"
+        excluded_environments = ["security"]
         notes = "Attach the Lambda to the API Gateway."
         properties = {
             Octopus.Action.Aws.AssumeRole = "False"
@@ -581,6 +588,7 @@ step "update-stage" {
 
     action {
         action_type = "Octopus.AwsRunCloudFormation"
+        excluded_environments = ["security"]
         notes = "This step deploys the deployment created in the previous step, effectively exposing the new Lambdas to the public."
         properties = {
             Octopus.Action.Aws.AssumeRole = "False"
@@ -640,5 +648,68 @@ step "update-stage" {
             Octopus.Action.AwsAccount.Variable = "AWS.Account"
         }
         worker_pool = "hosted-ubuntu"
+    }
+}
+
+step "vulnerability-scan" {
+    name = "Vulnerability Scan"
+
+    action {
+        action_type = "Octopus.Script"
+        environments = ["security"]
+        properties = {
+            Octopus.Action.Script.ScriptBody = <<-EOT
+                echo "##octopus[stdout-verbose]"
+                docker pull ghcr.io/appthreat/dep-scan
+                echo "##octopus[stdout-default]"
+                
+                cd sbom
+                
+                TIMESTAMP=$(date +%s%3N)
+                SUCCESS=0
+                for x in $(find . -name bom.xml -type f -print); do
+                    echo "Scanning ${x}"
+                
+                    # Delete any existing report file
+                    if [[ -f "$PWD/depscan-bom.json" ]]; then
+                      rm "$PWD/depscan-bom.json"
+                    fi
+                
+                    # Generate the report, capturing the output, and ensuring $? is set to the exit code
+                    OUTPUT=$(bash -c "docker run --rm -v \"$PWD:/app\" ghcr.io/appthreat/dep-scan --bom \"/app/${x}\" --type bom --report_file /app/depscan.json; exit \$?" 2>&1)
+                
+                    # Success is set to 1 if the exit code is not zero
+                    if [[ $? -ne 0 ]]; then
+                        SUCCESS=1
+                    fi
+                
+                    # Print the output stripped of ANSI colour codes
+                    echo -e "${OUTPUT}" | sed 's/\x1b\[[0-9;]*m//g'
+                done
+                
+                set_octopusvariable "VerificationResult" $SUCCESS
+                
+                if [[ $SUCCESS -ne 0 ]]; then
+                  >&2 echo "Critical vulnerabilities were detected"
+                fi
+                
+                exit 0
+                
+                EOT
+            Octopus.Action.Script.ScriptSource = "Inline"
+            Octopus.Action.Script.Syntax = "Bash"
+        }
+        worker_pool = "hosted-ubuntu"
+
+        packages "sbom" {
+            acquisition_location = "Server"
+            feed = "sales-maven-feed"
+            package_id = "com.octopus:products-microservice-sbom"
+            properties = {
+                Extract = "True"
+                Purpose = ""
+                SelectionMode = "immediate"
+            }
+        }
     }
 }
