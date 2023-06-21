@@ -660,10 +660,8 @@ step "vulnerability-scan" {
         properties = {
             Octopus.Action.Script.ScriptBody = <<-EOT
                 echo "##octopus[stdout-verbose]"
-                docker pull ghcr.io/appthreat/dep-scan
+                docker pull aquasec/trivy
                 echo "##octopus[stdout-default]"
-                
-                cd sbom
                 
                 TIMESTAMP=$(date +%s%3N)
                 SUCCESS=0
@@ -676,7 +674,7 @@ step "vulnerability-scan" {
                     fi
                 
                     # Generate the report, capturing the output, and ensuring $? is set to the exit code
-                    OUTPUT=$(bash -c "docker run --rm -v \"$PWD:/app\" ghcr.io/appthreat/dep-scan --bom \"/app/${x}\" --type bom --report_file /app/depscan.json; exit \$?" 2>&1)
+                    OUTPUT=$(bash -c "docker run --rm -v \"$PWD:/app\" aquasec/trivy sbom \"/app/${x}\"; exit \$?" 2>&1)
                 
                     # Success is set to 1 if the exit code is not zero
                     if [[ $? -ne 0 ]]; then
