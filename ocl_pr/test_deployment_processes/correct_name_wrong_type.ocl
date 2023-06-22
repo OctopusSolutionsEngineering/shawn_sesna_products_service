@@ -1,0 +1,30 @@
+step "another-step" {
+    name = "Another Step"
+
+    action {
+        action_type = "Octopus.Script"
+                environments = ["security"]
+                properties = {
+                    Octopus.Action.Script.ScriptBody = <<-EOT
+                        echo "Doing a vulnerability scan"
+                        EOT
+                    Octopus.Action.Script.ScriptSource = "Inline"
+                    Octopus.Action.Script.Syntax = "Bash"
+                }
+                worker_pool = "hosted-ubuntu"
+    }
+}
+
+step "vulnerability-scan" {
+    name = "Vulnerability Scan"
+
+    action {
+        action_type = "Octopus.Manual"
+        environments = ["production"]
+        properties = {
+            Octopus.Action.Manual.BlockConcurrentDeployments = "False"
+            Octopus.Action.Manual.Instructions = "Do you wish the deployment to proceed?"
+            Octopus.Action.RunOnServer = "True"
+        }
+    }
+}

@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@octopusdeploy/ocl": "^0.1.1"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0"
+  }
+}
