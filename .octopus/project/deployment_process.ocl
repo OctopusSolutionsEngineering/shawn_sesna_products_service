@@ -651,6 +651,21 @@ step "update-stage" {
     }
 }
 
+step "display-outputs" {
+    name = "Display Outputs"
+
+    action {
+        action_type = "Octopus.Script"
+        excluded_environments = ["security"]
+        properties = {
+            Octopus.Action.Script.ScriptBody = "write_highlight \"Get the associated [ebook](https://github.com/OctopusSolutionsEngineering/SalesEngineeringAwsLambda/releases/latest/download/lambda.pdf).\""
+            Octopus.Action.Script.ScriptSource = "Inline"
+            Octopus.Action.Script.Syntax = "Bash"
+        }
+        worker_pool = "hosted-ubuntu"
+    }
+}
+
 step "vulnerability-scan" {
     name = "Vulnerability Scan"
 
