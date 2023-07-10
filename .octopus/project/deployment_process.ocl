@@ -3,6 +3,7 @@ step "generate-github-token" {
 
     action {
         action_type = "Octopus.Script"
+        notes = "Generate a token from a GitHub application used to authenticate with the CaC GitHub repo."
         properties = {
             Octopus.Action.Package.DownloadOnTentacle = "False"
             Octopus.Action.Package.FeedId = "sales-maven-feed"
@@ -28,6 +29,7 @@ step "check-for-updates" {
 
     action {
         action_type = "Octopus.Script"
+        notes = "Check the upstream repo to see if there are any updates to merge into this project."
         properties = {
             Octopus.Action.Package.DownloadOnTentacle = "False"
             Octopus.Action.Package.FeedId = "sales-maven-feed"
