@@ -59,7 +59,7 @@ function checkPr(ocl) {
             const secondStepName = getUnquotedPropertyValue(getProperty(steps[1], "name"))
 
             if (secondStepName !== SecondStepName) {
-                console.log("First step must be called " + SecondStepName + " (was " + secondStepName + ")")
+                console.log("Second step must be called " + SecondStepName + " (was " + secondStepName + ")")
                 resolve(false)
                 return
             }
