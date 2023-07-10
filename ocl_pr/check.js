@@ -68,7 +68,7 @@ function checkPr(ocl) {
             const secondStepActionType = getUnquotedPropertyValue(getProperty(secondStepAction, "action_type"))
 
             if (secondStepActionType !== ScriptType) {
-                console.log("Second step must be a script step (was " + firstStepActionType + ")")
+                console.log("Second step must be a script step (was " + secondStepActionType + ")")
                 resolve(false)
                 return
             }
