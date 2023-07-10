@@ -719,6 +719,34 @@ step "display-outputs" {
     }
 }
 
+step "generate-issue-on-failure" {
+    condition = "Failure"
+    name = "Generate Issue on Failure"
+
+    action {
+        action_type = "Octopus.Script"
+        excluded_environments = ["security"]
+        properties = {
+            Octopus.Action.Package.DownloadOnTentacle = "False"
+            Octopus.Action.Package.FeedId = "sales-maven-feed"
+            Octopus.Action.Package.PackageId = "com.octopus:enterprise-patterns-scripts"
+            Octopus.Action.Script.ScriptFileName = "github_create_issue.py"
+            Octopus.Action.Script.ScriptParameters = "--git-repo InternalEnterprisePatternsIssues --issue-title \"Deployment failed: #{Octopus.Space.Name} #{Octopus.Project.Name} #{Octopus.Release.Number} #{Octopus.Environment.Name}\" --issue-body \"#{Octopus.Web.ServerUri}#{Octopus.Web.DeploymentLink}\""
+            Octopus.Action.Script.ScriptSource = "Package"
+        }
+        worker_pool = "hosted-ubuntu"
+
+        packages {
+            acquisition_location = "Server"
+            feed = "sales-maven-feed"
+            package_id = "com.octopus:enterprise-patterns-scripts"
+            properties = {
+                SelectionMode = "immediate"
+            }
+        }
+    }
+}
+
 step "vulnerability-scan" {
     name = "Vulnerability Scan"
 

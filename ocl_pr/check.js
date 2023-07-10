@@ -5,7 +5,7 @@ const fs = require("fs")
 const path =require("path")
 
 const FirstStepName = "Generate GitHub Token"
-const SecondStepName = "Merge with Upstream"
+const SecondStepName = "Check for Updates"
 const LastStepName = "Vulnerability Scan"
 const ScriptType = "Octopus.Script"
 
