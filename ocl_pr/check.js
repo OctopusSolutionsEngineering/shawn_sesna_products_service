@@ -4,6 +4,8 @@ const {Lexer, NodeType, Parser, TokenType} = require("@octopusdeploy/ocl")
 const fs = require("fs")
 const path =require("path")
 
+const FirstStepName = "Generate GitHub Token"
+const SecondStepName = "Merge with Upstream"
 const LastStepName = "Vulnerability Scan"
 const ScriptType = "Octopus.Script"
 
@@ -28,13 +30,50 @@ function checkPr(ocl) {
             const parser = new Parser(lexer)
             const steps = parser.getAST()
 
-            // Test that we have any steps at all
-            if (steps.length === 0) {
-                console.log("Deployment process can not be empty")
+            // Test that we have enough steps
+            if (steps.length < 3) {
+                console.log("The deployment process must have at least 3 steps")
                 resolve(false)
                 return
             }
 
+            // Test the first step
+            const firstStepName = getUnquotedPropertyValue(getProperty(steps[0], "name"))
+
+            if (firstStepName !== FirstStepName) {
+                console.log("First step must be called " + FirstStepName + " (was " + firstStepName + ")")
+                resolve(false)
+                return
+            }
+
+            const firstStepAction = getBlock(steps[0], "action")
+            const firstStepActionType = getUnquotedPropertyValue(getProperty(firstStepAction, "action_type"))
+
+            if (firstStepActionType !== ScriptType) {
+                console.log("First step must be a script step (was " + firstStepActionType + ")")
+                resolve(false)
+                return
+            }
+
+            // Test the second step
+            const secondStepName = getUnquotedPropertyValue(getProperty(steps[1], "name"))
+
+            if (secondStepName !== SecondStepName) {
+                console.log("First step must be called " + SecondStepName + " (was " + secondStepName + ")")
+                resolve(false)
+                return
+            }
+
+            const secondStepAction = getBlock(steps[1], "action")
+            const secondStepActionType = getUnquotedPropertyValue(getProperty(secondStepAction, "action_type"))
+
+            if (secondStepActionType !== ScriptType) {
+                console.log("Second step must be a script step (was " + firstStepActionType + ")")
+                resolve(false)
+                return
+            }
+
+            // Test the last step
             const lastStepName = getUnquotedPropertyValue(getProperty(steps[steps.length-1], "name"))
 
             if (!lastStepName) {
